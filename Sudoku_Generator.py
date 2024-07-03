@@ -9,10 +9,11 @@ Sudoku Puzzle creator
 
 import numpy as np
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import ttk
 
 
-def sudoku_window(grid_layout):
+class sudoku_grid_GUI:
     """
     Creates the window for users to access the sudoku grid
 
@@ -30,63 +31,82 @@ def sudoku_window(grid_layout):
     None.
 
     """
-    # back & fore ground colours
-    bg_colour = "white"
-    fg_colour = "Black"
 
-    # Initilaise window
-    window = tk.Tk()
-    # Set title and colours
-    window.title("Sudoku")
-    window.configure(background=bg_colour)
+    def __init__(self, grid_layout):
+        self.grid = grid_layout
 
-    # Fill window with sudoku grid
-    set_visual_grid(grid_layout, window)
-    #ttk.Separator(window, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
+        # back & fore ground colours
+        bg_colour = "white"
+        fg_colour = "Black"
 
-    window.mainloop()
+        # Initilaise window
+        self.window = tk.Tk()
+        # Set title and colours
+        self.window.title("Sudoku")
+        self.window.configure(background=bg_colour)
 
+        # Fill window with sudoku grid
+        self.set_visual_grid()
+        #ttk.Separator(window, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
 
-def set_visual_grid(grid_layout, build_window):
-    """
-    Fills window with a Sudoku grid from grid_layout
+        self.window.mainloop()
 
-    Parameters
-    ----------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-    build_window : tkinter parent window 
-      parent window which will showcase the widgets created in this function
+    def set_visual_grid(self):
+        """
+        Fills window with a Sudoku grid from grid_layout
 
-    Returns
-    -------
-    None.
+        Parameters
+        ----------
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
+        build_window : tkinter parent window 
+          parent window which will showcase the widgets created in this function
 
-    """
-    # Frame used in attempt to create sudoku boxes
-    label_frame = tk.Frame(build_window)
+        Returns
+        -------
+        None.
 
-    # Create and fill 9x9 grid
-    for row_itr in range(9):
-        #build_window.rowconfigure(i, weight=100)
-        for column_itr in range(9):
-            #    if i % 3 == 0 and j % 3 == 0:
-            #        label_frame = tk.Frame(build_window)
-            # Show pre-filled numbers and create text box for empty cells which need to be filled
-            if grid_layout[1, row_itr, column_itr] != 0:
-                tk.Label(label_frame, text=str(
-                    int(grid_layout[1, row_itr, column_itr])), bg="white", fg="black", font="none 12 bold", height=2, width=2).grid(row=row_itr, column=column_itr*3)
+        """
+        # Frame used in attempt to create sudoku boxes
+        label_frame = tk.Frame(self.window)
+
+        # Create and fill 9x9 grid
+        for row_itr in range(9):
+            #build_window.rowconfigure(i, weight=100)
+            for column_itr in range(9):
+                #    if i % 3 == 0 and j % 3 == 0:
+                #        label_frame = tk.Frame(build_window)
+                # Show pre-filled numbers and create text box for empty cells which need to be filled
+                if self.grid[1, row_itr, column_itr] != 0:
+                    tk.Label(label_frame, text=str(
+                        int(self.grid[1, row_itr, column_itr])), bg="white", fg="black", font="none 12 bold").grid(row=row_itr, column=column_itr)
+                else:
+                    extinput = tk.Entry(label_frame, bg="White", ).grid(
+                        row=row_itr, column=column_itr)
+                    self.grid[1, row_itr, column_itr] = extinput
+                #build_window.columnconfigure(j, weight=1)
+        #ttk.Separator(label_frame, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
+        check = tk.Button(label_frame, text="Check answer",
+                          command=self.check_answer).grid(row=10, column=3)
+        #check.grid(row=10, column=3, columnspan=3)
+        # Allow frame to expand with window tab
+        label_frame.pack()  # fill=tk.BOTH)  # , expand=1, padx=20, pady=20)
+
+    def check_answer(self):
+        try:
+            for row_itr in range(9):
+                for column_itr in range(9):
+                    int(self.grid[1, :, :])
+            if self.grid[1, :, :] == self.grid[0, :, :]:
+                messagebox.showinfo("Success", "You completed it!!!!")
             else:
-                tk.Text(label_frame, bg="White", height=2, width=2).grid(
-                    row=row_itr, column=column_itr*3)
-            #build_window.columnconfigure(j, weight=1)
-    #ttk.Separator(label_frame, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
-    # Allow frame to expand with window tab
-    label_frame.pack()  # fill=tk.BOTH)  # , expand=1, padx=20, pady=20)
+                messagebox.showinfo("Fail", "There is a mistake somewhere :(")
+        except:
+            messagebox.showerror("Error", "Please only enter intergers between 1-9 !")
 
 
 def complete_grid_generator(grid_layout):
@@ -280,4 +300,4 @@ solvable_grid = solvable_grid(grid)
 print("SUCCESSFUL GRID : ")
 print(grid[0, :, :])
 
-sudoku_window(solvable_grid)
+app = sudoku_grid_GUI(solvable_grid)
