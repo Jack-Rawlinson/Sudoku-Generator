@@ -33,6 +33,7 @@ class sudoku_grid_GUI:
     """
 
     def __init__(self, grid_layout):
+
         self.grid = grid_layout
 
         # back & fore ground colours
@@ -73,40 +74,55 @@ class sudoku_grid_GUI:
         """
         # Frame used in attempt to create sudoku boxes
         label_frame = tk.Frame(self.window)
+        vcmd = self.window.register(self.callback)
+        self.entry_grid = [[0 for i in range(9)] for j in range(9)]
 
         # Create and fill 9x9 grid
         for row_itr in range(9):
             #build_window.rowconfigure(i, weight=100)
             for column_itr in range(9):
-                #    if i % 3 == 0 and j % 3 == 0:
-                #        label_frame = tk.Frame(build_window)
-                # Show pre-filled numbers and create text box for empty cells which need to be filled
+                # Use entry boxes as cells
+                entry = tk.Entry(label_frame, width=5, justify='center', font=(
+                    'Arial', 18), validate="all", validatecommand=(vcmd, "%P"))
+                self.entry_grid[row_itr][column_itr] = entry
+                entry.grid(row=row_itr, column=column_itr, padx=5, pady=5)
+                # Pre-fill the entry with the initial value from the board if not zero
                 if self.grid[1, row_itr, column_itr] != 0:
-                    tk.Label(label_frame, text=str(
-                        int(self.grid[1, row_itr, column_itr])), bg="white", fg="black", font="none 12 bold").grid(row=row_itr, column=column_itr)
-                else:
-                    extinput = tk.Entry(label_frame, bg="White", ).grid(
-                        row=row_itr, column=column_itr)
-                    self.grid[1, row_itr, column_itr] = extinput
+                    entry.insert(0, int(self.grid[1, row_itr, column_itr]))
+                    # Disable editing of initial values
+                    entry.config(state='disabled')
+
                 #build_window.columnconfigure(j, weight=1)
-        #ttk.Separator(label_frame, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
+        # Check answer button
         check = tk.Button(label_frame, text="Check answer",
                           command=self.check_answer).grid(row=10, column=3)
-        #check.grid(row=10, column=3, columnspan=3)
+
         # Allow frame to expand with window tab
-        label_frame.pack()  # fill=tk.BOTH)  # , expand=1, padx=20, pady=20)
+        label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
+
+    def callback(self, P):
+        # Validation function in order to restrict inputs to only numbers
+        if str.isdigit(P) or P == "":
+            return True
+        else:
+            return False
 
     def check_answer(self):
         try:
+            correct_answers = 0
             for row_itr in range(9):
                 for column_itr in range(9):
-                    int(self.grid[1, :, :])
-            if self.grid[1, :, :] == self.grid[0, :, :]:
+                    # Note when value in entry display matches the correct grid
+                    if int(self.grid[0, row_itr, column_itr]) == int(self.entry_grid[row_itr][column_itr].get()):
+                        correct_answers += 1
+
+            if correct_answers == 81:
                 messagebox.showinfo("Success", "You completed it!!!!")
             else:
-                messagebox.showinfo("Fail", "There is a mistake somewhere :(")
-        except:
-            messagebox.showerror("Error", "Please only enter intergers between 1-9 !")
+                messagebox.showinfo("Fail", 'There is a mistake somewhere :(')
+        # To catch when nothing is entered
+        except Exception as e:
+            messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
 
 
 def complete_grid_generator(grid_layout):
@@ -273,7 +289,7 @@ def solvable_grid(grid_layout):
     """
     # Iterator to track number of filled cells
     filled_cells = 0
-    while filled_cells < 17:
+    while filled_cells < visible_numbers:
         # Choose random cell to show value of
         row_value = np.random.choice(range(9), 1)
         column_value = np.random.choice(range(9), 1)
@@ -286,6 +302,7 @@ def solvable_grid(grid_layout):
     return grid_layout
 
 
+visible_numbers = 17
 # Create empty sudoku grid
 grid = np.zeros((11, 9, 9))
 
