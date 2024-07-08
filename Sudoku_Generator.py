@@ -73,41 +73,98 @@ class sudoku_grid_GUI:
 
         """
         # Frame used in attempt to create sudoku boxes
-        label_frame = tk.Frame(self.window)
-        vcmd = self.window.register(self.callback)
+        #label_frame = tk.Frame(self.window, relief="solid", bd=2, bg="white")
+        self.vcmd = self.window.register(self.callback)
         self.entry_grid = [[0 for i in range(9)] for j in range(9)]
+        colours = ["white", "light blue"]
 
         # Create and fill 9x9 grid
-        for row_itr in range(9):
+        for row_start in range(3):
+            row_start *= 3
             #build_window.rowconfigure(i, weight=100)
-            for column_itr in range(9):
+            for column_start in range(3):
+                column_start *= 3
                 # Use entry boxes as cells
-                entry = tk.Entry(label_frame, width=5, justify='center', font=(
-                    'Arial', 18), validate="all", validatecommand=(vcmd, "%P"))
-                self.entry_grid[row_itr][column_itr] = entry
-                entry.grid(row=row_itr, column=column_itr, padx=5, pady=5)
-                # Pre-fill the entry with the initial value from the board if not zero
-                if self.grid[1, row_itr, column_itr] != 0:
-                    entry.insert(0, int(self.grid[1, row_itr, column_itr]))
-                    # Disable editing of initial values
-                    entry.config(state='disabled')
+                colour_index = (row_start + column_start) % 2
+                self.create_3x3_box(row_start, column_start, colours[colour_index])
 
                 #build_window.columnconfigure(j, weight=1)
         # Check answer button
-        check = tk.Button(label_frame, text="Check answer",
+        check = tk.Button(self.window, text="Check answer",
                           command=self.check_answer).grid(row=10, column=3)
 
         # Allow frame to expand with window tab
-        label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
+        #label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
+
+    def create_3x3_box(self, row_start, column_start, colour):
+        """
+        Function to reduce code duplication when creating boxes
+
+        Parameters
+        ----------
+        row_start : Int
+          Grid position of uppper left corner of current box
+        column_start : Int
+          Grid position of upper left corner of current box
+        colour : String
+          Background colour of cells within current box 
+
+        Returns
+        -------
+        None.
+
+        """
+        # Cerate new frame for 3x3 box
+        frame = tk.Frame(self.window, relief="solid", bd=2,
+                         bg=colour).grid(row=row_start, column=column_start)
+
+        for row_itr in range(3):
+            for column_itr in range(3):
+                # Calculate index of current cell
+                row_index = row_start + row_itr
+                column_index = column_start + column_itr
+
+                entry = tk.Entry(frame, width=5, justify='center', font=(
+                    'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))
+                # Store entries
+                self.entry_grid[row_index][column_index] = entry
+                entry.grid(row=row_index, column=column_index, padx=5, pady=5)
+
+                # Pre-fill the entry with the initial value from the board if not zero
+                if self.grid[1, row_index, column_index] != 0:
+                    entry.insert(0, int(self.grid[1, row_index, column_index]))
+                    # Disable editing of initial values
+                    entry.config(state='disabled', disabledbackground=colour)
 
     def callback(self, P):
-        # Validation function in order to restrict inputs to only numbers
+        """
+        Validation function in order to restrict inputs to only numbers
+
+        Parameters
+        ----------
+        P : String
+          Value entered into entry box
+
+        Returns
+        -------
+        bool
+          Results of validation
+
+        """
         if str.isdigit(P) or P == "":
             return True
         else:
             return False
 
     def check_answer(self):
+        """
+        Command function to validate the entered solution and show an info box
+
+        Returns
+        -------
+        None.
+
+        """
         try:
             correct_answers = 0
             for row_itr in range(9):
@@ -121,7 +178,7 @@ class sudoku_grid_GUI:
             else:
                 messagebox.showinfo("Fail", 'There is a mistake somewhere :(')
         # To catch when nothing is entered
-        except Exception as e:
+        except Exception:
             messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
 
 
