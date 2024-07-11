@@ -13,7 +13,7 @@ from tkinter import messagebox
 from tkinter import ttk
 
 
-class sudoku_grid_GUI:
+class Sudoku_Grid_GUI:
     """
     Creates the window for users to access the sudoku grid
 
@@ -32,12 +32,12 @@ class sudoku_grid_GUI:
 
     """
 
-    def __init__(self, grid_layout):
+    def __init__(self):
 
-        self.grid = grid_layout
+        self.complete_grid_generator()
 
         # back & fore ground colours
-        bg_colour = "white"
+        bg_colour = "Black"
         fg_colour = "Black"
 
         # Initilaise window
@@ -47,12 +47,12 @@ class sudoku_grid_GUI:
         self.window.configure(background=bg_colour)
 
         # Fill window with sudoku grid
-        self.set_visual_grid()
+        self.gui_config()
         #ttk.Separator(window, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
 
         self.window.mainloop()
 
-    def set_visual_grid(self):
+    def gui_config(self):
         """
         Fills window with a Sudoku grid from grid_layout
 
@@ -72,12 +72,27 @@ class sudoku_grid_GUI:
         None.
 
         """
+        print("Setting GUI")
         # Frame used in attempt to create sudoku boxes
         #label_frame = tk.Frame(self.window, relief="solid", bd=2, bg="white")
         self.vcmd = self.window.register(self.callback)
         self.entry_grid = [[0 for i in range(9)] for j in range(9)]
-        colours = ["white", "light blue"]
 
+        self.set_visual_grid()
+
+        # Check answer button
+        tk.Button(self.window, text="Check answer",
+                  command=self.check_answer).grid(row=10, column=0)  # , padx=5, pady=5)
+        tk.Button(self.window, text="Generate new grid",
+                  command=self.set_visual_grid).grid(row=10, column=3, columnspan=2)
+        tk.Button(self.window, text="Show mistakes",
+                  command=self.show_errors).grid(row=10, column=6)
+
+        # Allow frame to expand with window tab
+        #label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
+    def set_visual_grid(self):
+        self.complete_grid_generator()
+        colours = ["white", "light blue"]
         # Create and fill 9x9 grid
         for row_start in range(3):
             row_start *= 3
@@ -87,14 +102,6 @@ class sudoku_grid_GUI:
                 # Use entry boxes as cells
                 colour_index = (row_start + column_start) % 2
                 self.create_3x3_box(row_start, column_start, colours[colour_index])
-
-                #build_window.columnconfigure(j, weight=1)
-        # Check answer button
-        check = tk.Button(self.window, text="Check answer",
-                          command=self.check_answer).grid(row=10, column=3)
-
-        # Allow frame to expand with window tab
-        #label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
 
     def create_3x3_box(self, row_start, column_start, colour):
         """
@@ -115,9 +122,9 @@ class sudoku_grid_GUI:
 
         """
         # Cerate new frame for 3x3 box
-        frame = tk.Frame(self.window, relief="solid", bd=2,
-                         bg=colour).grid(row=row_start, column=column_start)
-
+        frame = tk.Frame(self.window, relief="groove", bd=2,
+                         bg=colour).grid(row=row_start, column=column_start)  # , padx=5, pady=5)
+        print("Creating frames")
         for row_itr in range(3):
             for column_itr in range(3):
                 # Calculate index of current cell
@@ -125,7 +132,7 @@ class sudoku_grid_GUI:
                 column_index = column_start + column_itr
 
                 entry = tk.Entry(frame, width=5, justify='center', font=(
-                    'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))
+                    'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))  # .grid(row=row_index, column=column_index)
                 # Store entries
                 self.entry_grid[row_index][column_index] = entry
                 entry.grid(row=row_index, column=column_index, padx=5, pady=5)
@@ -181,197 +188,202 @@ class sudoku_grid_GUI:
         except Exception:
             messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
 
+    def show_errors(self):
+        for row_itr in range(9):
+            for column_itr in range(9):
+                try:
+                    if int(self.grid[0, row_itr, column_itr]) != int(self.entry_grid[row_itr][column_itr].get()):
+                        self.entry_grid[row_itr][column_itr].config(bg="red")
+                except:
+                    self.entry_grid[row_itr][column_itr].config(bg="red")
 
-def complete_grid_generator(grid_layout):
-    """
-    Cycles through every cell in the sudoku grid and assigns a valid number
+    def complete_grid_generator(self):
+        """
+        Cycles through every cell in the sudoku grid and assigns a valid number
 
-    Parameters
-    ----------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-    Returns
-    -------
-    grid_layout : 3-D numpy array
-      Array containing the completed sudoku grid.
+        Parameters
+        ----------
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
+        Returns
+        -------
+        grid_layout : 3-D numpy array
+          Array containing the completed sudoku grid.
 
-    """
-    # Set initail starting position
-    row = 0
-    collumn = 0
-    grid_incomplete = True
-    # Create a depp copy for use if code gets stuck for options at the end of a row
-    grid_memory = np.copy(grid_layout)
-    # Itterate over each cell
+        """
+        # Create empty sudoku grid
+        self.grid = np.zeros((11, 9, 9))
 
-    while grid_incomplete:
+        # Fill probility grids for each possible number
+        for number in range(2, 11):
+            self.grid[number, :, :] = 1
 
-        # 1-d array of probabilities for each number in a cell
-        probailities = get_cell_probabilites(grid_layout, row, collumn)
+        # Set initial starting position
+        row = 0
+        collumn = 0
+        grid_incomplete = True
+        # Create a deep copy for use if code gets stuck for options at the end of a row
+        grid_memory = np.copy(self.grid)
+        # Iterate over each cell
 
-        # Save configureation at the start of a new row
-        if collumn == 0:
-            grid_memory = np.copy(grid_layout)
+        while grid_incomplete:
 
-        # Check for NaNs, if found then reset current row
-        # This is repeated until a valid row is created
-        if np.isnan(probailities[0]):
-            collumn = 0
-            # Reset using memory
-            # Hard copy used to avoid memory corruption
-            grid_layout = np.copy(grid_memory)
-            # Update probability array
-            probailities = get_cell_probabilites(grid_layout, row, collumn)
+            # 1-d array of probabilities for each number in a cell
+            probailities = self.get_cell_probabilites(row, collumn)
+            print("Getting initial probs for cell")
 
-        # Assign the cell a number between 1 and 9
-        cell_value = np.random.choice(range(1, 10), 1, p=probailities)
-        grid_layout[0, row, collumn] = int(cell_value)
+            # Save configureation at the start of a new row
+            if collumn == 0:
+                grid_memory = np.copy(self.grid)
 
-        # Reset the probability maps in accordance to this new cell number
-        set_probabilities(cell_value+1, grid_layout, row, collumn)
+            # Check for NaNs, if found then reset current row
+            # This is repeated until a valid row is created
 
-        # Update current collumn position
-        collumn += 1
+            if np.isnan(probailities[0]):
+                collumn = 0
+                # Reset using memory
+                # Hard copy used to avoid memory corruption
+                self.grid = np.copy(grid_memory)
+                # Update probability array
+                probailities = self.get_cell_probabilites(row, collumn)
+                print("Reset grid")
+                print(f'Issue row = {row}')
 
-        # End code if in final cell
-        if collumn == 9 and row == 8:
-            grid_incomplete = False
+            # Assign the cell a number between 1 and 9
+            cell_value = np.random.choice(range(1, 10), 1, p=probailities)
+            self.grid[0, row, collumn] = int(cell_value)
 
-        # Move to new row at end of current one
-        if collumn == 9:
-            row += 1
-            collumn = 0
+            # Reset the probability maps in accordance to this new cell number
+            self.set_probabilities(cell_value+1, row, collumn)
 
-    return grid_layout
+            # Update current collumn position
+            collumn += 1
 
+            # End code if in final cell
+            if collumn == 9 and row == 8:
+                grid_incomplete = False
 
-def get_cell_probabilites(grid_layout, row, collumn):
-    """
-    Cylces through the grid_layout probability maps to create 
-      1-d array of probabilities for the current cell choice.
+            # Move to new row at end of current one
+            if collumn == 9:
+                row += 1
+                collumn = 0
 
-    Parameters
-    ----------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-    row : Int
-      Current row index.
-    collumn : Int
-      Current collumn index.
+        print("SUCCESSFUL GRID : ")
+        print(self.grid[0, :, :])
+        self.solvable_grid()
 
-    Returns
-    -------
-    probs : 1-D numpy array
-      1-D array of probabilites for the current cell.
+    def get_cell_probabilites(self, row, collumn):
+        """
+        Cylces through the grid_layout probability maps to create 
+          1-d array of probabilities for the current cell choice.
 
-    """
+        Parameters
+        ----------
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
+        row : Int
+          Current row index.
+        collumn : Int
+          Current collumn index.
 
-    probs = np.zeros(9)
+        Returns
+        -------
+        probs : 1-D numpy array
+          1-D array of probabilites for the current cell.
 
-    for i in range(9):
-        probs[i] = grid_layout[i+2, row, collumn]
-    total = sum(probs)
-    # Set equal probability for each possible number
-    probs = probs * (1/total)
-    return probs
+        """
 
+        probs = np.zeros(9)
 
-def set_probabilities(number, grid_layout, row, collumn):
-    """
-    Updates probability map in accordance with the latest cell value 
+        for i in range(9):
+            probs[i] = self.grid[i+2, row, collumn]
+        total = sum(probs)
+        # Set equal probability for each possible number
+        probs = probs * (1/total)
+        print("leaving get probs")
+        return probs
 
-    Parameters
-    ----------
-    number : Int
-      Value that has just been placed into cell
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-    row : Int
-      Current row index.
-    collumn : int
-      Current collumn index
+    def set_probabilities(self, number, row, collumn):
+        """
+        Updates probability map in accordance with the latest cell value 
 
-    Returns
-    -------
-    None.
+        Parameters
+        ----------
+        number : Int
+          Value that has just been placed into cell
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
+        row : Int
+          Current row index.
+        collumn : int
+          Current collumn index
 
-    """
-    # Set current row and collumn probabilities to 0 in the map of the cell value
-    grid_layout[number, :, collumn] = 0
-    grid_layout[number, row, :] = 0
-    # Locate the 3x3 box where cell is situated
-    box_row = int(np.floor(row/3)) * 3
-    box_collumn = int(np.floor(collumn/3))*3
-    # Set probabilites in box to 0
-    for current_row in range(3):
-        cell_row = box_row + current_row
-        for current_collumn in range(3):
-            cell_collumn = box_collumn + current_collumn
-            grid_layout[number, cell_row, cell_collumn] = 0
+        Returns
+        -------
+        None.
 
+        """
+        # Set current row and collumn probabilities to 0 in the map of the cell value
+        self.grid[number, :, collumn] = 0
+        self.grid[number, row, :] = 0
+        # Locate the 3x3 box where cell is situated
+        box_row = int(np.floor(row/3)) * 3
+        box_collumn = int(np.floor(collumn/3))*3
+        # Set probabilites in box to 0
+        for current_row in range(3):
+            cell_row = box_row + current_row
+            for current_collumn in range(3):
+                cell_collumn = box_collumn + current_collumn
+                self.grid[number, cell_row, cell_collumn] = 0
 
-def solvable_grid(grid_layout):
-    """
-    Creates solvable sudoku grid using the complete grid 
+    def solvable_grid(self):
+        """
+        Creates solvable sudoku grid using the complete grid 
 
-    Parameters
-    ----------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
+        Parameters
+        ----------
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
 
-    Returns
-    -------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-    """
-    # Iterator to track number of filled cells
-    filled_cells = 0
-    while filled_cells < visible_numbers:
-        # Choose random cell to show value of
-        row_value = np.random.choice(range(9), 1)
-        column_value = np.random.choice(range(9), 1)
-        # Check that this cell does not already showcase a correct value
-        if grid_layout[1, row_value, column_value] == 0:
-            grid_layout[1, row_value, column_value] = grid_layout[0, row_value, column_value]
-            # Update iterator
-            filled_cells += 1
-
-    return grid_layout
+        Returns
+        -------
+        grid_layout : 3-D numpy array
+          grid_layout[:,:,0] - Contains the real value in each cell 
+          grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
+            for user to complete 
+          grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
+            for a cell to contain the number x, in following with sudoku rules.
+        """
+        # Iterator to track number of filled cells
+        filled_cells = 0
+        while filled_cells < visible_numbers:
+            # Choose random cell to show value of
+            row_value = np.random.choice(range(9), 1)
+            column_value = np.random.choice(range(9), 1)
+            # Check that this cell does not already showcase a correct value
+            if self.grid[1, row_value, column_value] == 0:
+                self.grid[1, row_value, column_value] = self.grid[0, row_value, column_value]
+                # Update iterator
+                filled_cells += 1
 
 
 visible_numbers = 17
-# Create empty sudoku grid
-grid = np.zeros((11, 9, 9))
 
-# Fill each probability map
-for i in range(9):
-    grid[i+2:, :] = 1
 
-# Generate sudoku grid
-grid = complete_grid_generator(grid)
-solvable_grid = solvable_grid(grid)
-
-print("SUCCESSFUL GRID : ")
-print(grid[0, :, :])
-
-app = sudoku_grid_GUI(solvable_grid)
+app = Sudoku_Grid_GUI()
