@@ -11,6 +11,7 @@ import numpy as np
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+import time
 
 
 class Sudoku_Grid_GUI:
@@ -50,6 +51,7 @@ class Sudoku_Grid_GUI:
         self.gui_config()
         #ttk.Separator(window, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
 
+        self.window.after(5, self.create_timer)
         self.window.mainloop()
 
     def gui_config(self):
@@ -84,9 +86,9 @@ class Sudoku_Grid_GUI:
         tk.Button(self.window, text="Check answer",
                   command=self.check_answer).grid(row=10, column=0)  # , padx=5, pady=5)
         tk.Button(self.window, text="Generate new grid",
-                  command=self.set_visual_grid).grid(row=10, column=3, columnspan=2)
+                  command=self.set_visual_grid).grid(row=10, column=1, columnspan=2)
         tk.Button(self.window, text="Show mistakes",
-                  command=self.show_errors).grid(row=10, column=6)
+                  command=self.show_errors).grid(row=10, column=3)
 
         # Allow frame to expand with window tab
         #label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
@@ -163,6 +165,30 @@ class Sudoku_Grid_GUI:
         else:
             return False
 
+    def create_timer(self):
+
+        self.timer_variable = tk.Label(self.window, text="00:00")
+        self.timer_variable.grid(
+            row=10, column=4, columnspan=2)
+
+        self.seconds = 0
+        self.minutes = 0
+        self.incomplete = True
+
+        self.window.after(1000, self.update_timer)
+
+    def update_timer(self):
+
+        self.seconds += 1
+
+        if self.seconds == 60:
+            self.minutes += 1
+            self.seconds = 0
+
+        self.timer_variable.config(text=f'{self.minutes:02d}:{self.seconds:02d}')
+        if self.incomplete:
+            self.window.after(1000, self.update_timer)
+
     def check_answer(self):
         """
         Command function to validate the entered solution and show an info box
@@ -177,24 +203,33 @@ class Sudoku_Grid_GUI:
             for row_itr in range(9):
                 for column_itr in range(9):
                     # Note when value in entry display matches the correct grid
+
                     if int(self.grid[0, row_itr, column_itr]) == int(self.entry_grid[row_itr][column_itr].get()):
                         correct_answers += 1
 
             if correct_answers == 81:
-                messagebox.showinfo("Success", "You completed it!!!!")
+                messagebox.showinfo(
+                    "Success", f'You completed it!!!! \nTime to complete : {self.minutes} minutes {self.seconds} seconds')
+                # Update that sudoku is solved to stop timer
+                self.incomplete = False
             else:
-                messagebox.showinfo("Fail", 'There is a mistake somewhere :(')
+                messagebox.showinfo(
+                    "Fail", f'There is a mistake somewhere :(, Correct answers = {correct_answers}')
         # To catch when nothing is entered
         except Exception:
             messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
 
     def show_errors(self):
+
         for row_itr in range(9):
             for column_itr in range(9):
                 try:
                     if int(self.grid[0, row_itr, column_itr]) != int(self.entry_grid[row_itr][column_itr].get()):
+                        print("seen a mistake ")
                         self.entry_grid[row_itr][column_itr].config(bg="red")
+                    print("Leaving show errors")
                 except:
+                    print("Seen as a NaN, In show errors")
                     self.entry_grid[row_itr][column_itr].config(bg="red")
 
     def complete_grid_generator(self):
@@ -383,7 +418,8 @@ class Sudoku_Grid_GUI:
                 filled_cells += 1
 
 
-visible_numbers = 17
+if __name__ == "__main__":
 
+    visible_numbers = 17
 
-app = Sudoku_Grid_GUI()
+    app = Sudoku_Grid_GUI()
