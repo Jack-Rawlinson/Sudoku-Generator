@@ -35,8 +35,6 @@ class Sudoku_Grid_GUI:
 
     def __init__(self):
 
-        self.complete_grid_generator()
-
         # back & fore ground colours
         bg_colour = "Black"
         fg_colour = "Black"
@@ -48,10 +46,12 @@ class Sudoku_Grid_GUI:
         self.window.configure(background=bg_colour)
 
         # Fill window with sudoku grid
+        #print("Entering gui creation")
         self.gui_config()
-        #ttk.Separator(window, orient='vertical').place(x=0.5, y=0.5, relwidth=0.1, relheight=0.1)
-
-        self.window.after(5, self.create_timer)
+        #print("Created gui config")
+        # Create timer widegt after 1 microsecond
+        self.window.after(1, self.create_timer)
+        # Start window
         self.window.mainloop()
 
     def gui_config(self):
@@ -77,23 +77,48 @@ class Sudoku_Grid_GUI:
         print("Setting GUI")
         # Frame used in attempt to create sudoku boxes
         #label_frame = tk.Frame(self.window, relief="solid", bd=2, bg="white")
-        self.vcmd = self.window.register(self.callback)
         self.entry_grid = [[0 for i in range(9)] for j in range(9)]
 
-        self.set_visual_grid()
+        # Validation command for entry boxes, resticts inputs to only ints
+        self.vcmd = self.window.register(self.callback)
+
+        # Creating combo box to set the difficulty of the puzzle
+        difficulties = ["Easy", "Medium", "Hard"]
+        self.difficulty_widget = ttk.Combobox(self.window, values=difficulties, state="readonly")
+        self.difficulty_widget.grid(row=10, column=6, columnspan=2)
+        # Setting initial diffculty to Hard
+        self.difficulty_widget.current(2)
+        self.difficulty = "Hard"
+        # Link box action to set_difficulty function
+        self.difficulty_widget.bind("<<ComboboxSelected>>", self.set_difficulty)
+
+        # Generate sudoku grid
+        self.complete_grid_generator()
+
+        # self.set_visual_grid()
 
         # Check answer button
         tk.Button(self.window, text="Check answer",
                   command=self.check_answer).grid(row=10, column=0)  # , padx=5, pady=5)
+        # Button to generate and show a new puzzle without closing application
         tk.Button(self.window, text="Generate new grid",
-                  command=self.set_visual_grid).grid(row=10, column=1, columnspan=2)
+                  command=self.generate_new_grid).grid(row=10, column=1, columnspan=2)
+        # Changes background colour of all incorrect boxes to red
         tk.Button(self.window, text="Show mistakes",
                   command=self.show_errors).grid(row=10, column=3)
 
         # Allow frame to expand with window tab
         #label_frame.pack(fill=tk.BOTH, expand=1, padx=20, pady=20)
+
     def set_visual_grid(self):
-        self.complete_grid_generator()
+        """
+        Set up the Sudoku grid in the GUI
+
+        Returns
+        -------
+        None.
+
+        """
         colours = ["white", "light blue"]
         # Create and fill 9x9 grid
         for row_start in range(3):
@@ -104,6 +129,7 @@ class Sudoku_Grid_GUI:
                 # Use entry boxes as cells
                 colour_index = (row_start + column_start) % 2
                 self.create_3x3_box(row_start, column_start, colours[colour_index])
+        print("Leaving set_visual_grid")
 
     def create_3x3_box(self, row_start, column_start, colour):
         """
@@ -144,6 +170,7 @@ class Sudoku_Grid_GUI:
                     entry.insert(0, int(self.grid[1, row_index, column_index]))
                     # Disable editing of initial values
                     entry.config(state='disabled', disabledbackground=colour)
+        print("Created frames")
 
     def callback(self, P):
         """
@@ -165,22 +192,93 @@ class Sudoku_Grid_GUI:
         else:
             return False
 
-    def create_timer(self):
+    def generate_new_grid(self):
+        """
+        Generates and shows a new grid
 
+        Returns
+        -------
+        None.
+
+        """
+        print("IN GENERATE NEW GRID")
+        self.complete_grid_generator()
+        self.set_visual_grid()
+        print("lEAVING GENERATE NEW GRID")
+
+    def set_difficulty(self, selection):
+        """
+        Will change the difficulty of the displayed puzzle 
+
+        Parameters
+        ----------
+        selection : TYPE
+          DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        print("In SET DIFFICULTY")
+        # Update difficulty when combobx is used
+
+        self.difficulty = self.difficulty_widget.get()
+
+        # Assume hard difficulty to begin to cut down of if statements
+        self.grid[1, :, :] = np.copy(self.hard_grid)
+
+        if self.difficulty_widget.get() == "Easy":
+            print("Setting to easy")
+            #self.difficulty = "Easy"
+            self.grid[1, :, :] = np.copy(self.easy_grid)
+
+        if self.difficulty_widget.get() == "Medium":
+            print("setting to medium")
+            #self.difficulty = "Medium"
+            self.grid[1, :, :] = np.copy(self.medium_grid)
+
+        # Update grid
+        self.set_visual_grid()
+        print(f'EASY GRID : \n{self.easy_grid}')
+        print(f'MEDIUM GRID : \n{self.medium_grid}')
+        print(f'HARD GRID : \n{self.hard_grid}')
+        print("LEAVING SET DIFFICULTY")
+        print(f'Diffculty = {self.difficulty}')
+
+    def create_timer(self):
+        """
+        Creates a timer widget and will start the clock after 1 second 
+
+        Returns
+        -------
+        None.
+
+        """
+        # Create and psotion the widget
         self.timer_variable = tk.Label(self.window, text="00:00")
         self.timer_variable.grid(
             row=10, column=4, columnspan=2)
 
         self.seconds = 0
         self.minutes = 0
+        # Itterator statement for timer
         self.incomplete = True
 
         self.window.after(1000, self.update_timer)
 
     def update_timer(self):
+        """
+        Updates timer every second 
+
+        Returns
+        -------
+        None.
+
+        """
 
         self.seconds += 1
-
+        # Update minute count after 60 seconds
         if self.seconds == 60:
             self.minutes += 1
             self.seconds = 0
@@ -280,6 +378,7 @@ class Sudoku_Grid_GUI:
 
             if np.isnan(probailities[0]):
                 collumn = 0
+                print(f'Issue grid \n{self.grid[0,:,:]}')
                 # Reset using memory
                 # Hard copy used to avoid memory corruption
                 self.grid = np.copy(grid_memory)
@@ -309,6 +408,8 @@ class Sudoku_Grid_GUI:
 
         print("SUCCESSFUL GRID : ")
         print(self.grid[0, :, :])
+        # Set interator now for use in solvable grid function
+        self.filled_cells = 0
         self.solvable_grid()
 
     def get_cell_probabilites(self, row, collumn):
@@ -406,8 +507,8 @@ class Sudoku_Grid_GUI:
             for a cell to contain the number x, in following with sudoku rules.
         """
         # Iterator to track number of filled cells
-        filled_cells = 0
-        while filled_cells < visible_numbers:
+        print("FILLING SOLVABLE GRID")
+        while self.filled_cells < 61:
             # Choose random cell to show value of
             row_value = np.random.choice(range(9), 1)
             column_value = np.random.choice(range(9), 1)
@@ -415,11 +516,19 @@ class Sudoku_Grid_GUI:
             if self.grid[1, row_value, column_value] == 0:
                 self.grid[1, row_value, column_value] = self.grid[0, row_value, column_value]
                 # Update iterator
-                filled_cells += 1
+                self.filled_cells += 1
+            # Save configureations of the grid for different difficulties
+            if self.filled_cells == 17:
+                self.hard_grid = np.copy(self.grid[1, :, :])
+            if self.filled_cells == 39:
+                self.medium_grid = np.copy(self.grid[1, :, :])
+
+        print("SET SOLVABLE GRID")
+        self.easy_grid = np.copy(self.grid[1, :, :])
+        # Call set_difficulty so that difficulty level is kept constant when generating new grids
+        self.set_difficulty(self.difficulty)
 
 
 if __name__ == "__main__":
-
-    visible_numbers = 17
 
     app = Sudoku_Grid_GUI()
