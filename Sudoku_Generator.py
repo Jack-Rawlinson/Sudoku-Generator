@@ -11,33 +11,17 @@ import numpy as np
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import time
 
 
 class Sudoku_Grid_GUI:
     """
     Creates the window for users to access the sudoku grid
-
-    Parameters
-    ----------
-    grid_layout : 3-D numpy array
-      grid_layout[:,:,0] - Contains the real value in each cell 
-      grid_layout[:,:,1] - Once a valid grid is created this will store a solvable grid
-        for user to complete 
-      grid_layout[:,:,x+1] - Conains map of 1's & 0's informing function if it is possible 
-        for a cell to contain the number x, in following with sudoku rules.
-
-    Returns
-    -------
-    None.
-
     """
 
     def __init__(self):
 
         # back & fore ground colours
         bg_colour = "Black"
-        fg_colour = "Black"
 
         # Initilaise window
         self.window = tk.Tk()
@@ -119,7 +103,7 @@ class Sudoku_Grid_GUI:
         None.
 
         """
-        colours = ["white", "light blue"]
+        self.colours = ["white", "light blue"]
         # Create and fill 9x9 grid
         for row_start in range(3):
             row_start *= 3
@@ -128,7 +112,7 @@ class Sudoku_Grid_GUI:
                 column_start *= 3
                 # Use entry boxes as cells
                 colour_index = (row_start + column_start) % 2
-                self.create_3x3_box(row_start, column_start, colours[colour_index])
+                self.create_3x3_box(row_start, column_start, self.colours[colour_index])
         print("Leaving set_visual_grid")
 
     def create_3x3_box(self, row_start, column_start, colour):
@@ -163,6 +147,7 @@ class Sudoku_Grid_GUI:
                     'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))  # .grid(row=row_index, column=column_index)
                 # Store entries
                 self.entry_grid[row_index][column_index] = entry
+                entry.bind("<Key>", self.highlight_cells)
                 entry.grid(row=row_index, column=column_index, padx=5, pady=5)
 
                 # Pre-fill the entry with the initial value from the board if not zero
@@ -171,6 +156,50 @@ class Sudoku_Grid_GUI:
                     # Disable editing of initial values
                     entry.config(state='disabled', disabledbackground=colour)
         print("Created frames")
+
+    def highlight_cells(self, event):
+        """
+        Function to override key press event and will highlight all cells with the same number as the key presssed.
+
+        Parameters
+        ----------
+        event : Tkinter event
+          Tkinter key press event
+
+        Returns
+        -------
+        None.
+
+        """
+        current_widget = event.widget
+        widget_row = current_widget.grid_info()["row"]
+        widget_column = current_widget.grid_info()["column"]
+
+        for row_itr in range(9):
+            for column_itr in range(9):
+                cell_colour = self.entry_grid[row_itr][column_itr]["background"]
+                # Reset all gold
+                if(cell_colour == "gold"):
+                    # Define position of box containing cell
+                    box_row = np.floor(row_itr / 3)
+                    box_column = np.floor(column_itr / 3)
+                    colour_index = int((box_row + box_column) % 2)
+
+                    # Reset cell to its original colour
+                    self.entry_grid[row_itr][column_itr].config(
+                        bg=self.colours[colour_index], disabledbackground=self.colours[colour_index])
+
+                # Set any cells with the same number as key pressed to gold as well as current cell
+                if (self.entry_grid[row_itr][column_itr].get() == event.char):
+                    self.entry_grid[row_itr][column_itr].config(
+                        bg="gold", disabledbackground="gold")
+
+        print("Hello, key pressed = " + event.char +
+              " Cell pressed = " + str(event.x_root - self.window.winfo_rootx()) + " " + str(event.y_root - self.window.winfo_rootx()))
+        print(
+            f'Position? = {self.window.grid_location(event.x_root - self.window.winfo_rootx(),event.y_root - self.window.winfo_rootx())}')
+        print(
+            f'self.entry_grid[0][0]["grid"] = {self.entry_grid[0][0].grid_info()["row"]}, {self.entry_grid[0][0].grid_info()["column"]}')
 
     def callback(self, P):
         """
@@ -318,16 +347,25 @@ class Sudoku_Grid_GUI:
             messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
 
     def show_errors(self):
+        """
+        Change background colour of all empty/incorrect cells to red 
 
+        Returns
+        -------
+        None.
+
+        """
         for row_itr in range(9):
             for column_itr in range(9):
+                # Try except catch empty cells
                 try:
+                    # If cell value doesn't match completed grid then change it to red
                     if int(self.grid[0, row_itr, column_itr]) != int(self.entry_grid[row_itr][column_itr].get()):
-                        print("seen a mistake ")
+                        #print("seen a mistake ")
                         self.entry_grid[row_itr][column_itr].config(bg="red")
-                    print("Leaving show errors")
+                    #print("Leaving show errors")
                 except:
-                    print("Seen as a NaN, In show errors")
+                    #print("Seen as a NaN, In show errors")
                     self.entry_grid[row_itr][column_itr].config(bg="red")
 
     def complete_grid_generator(self):
