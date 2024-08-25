@@ -171,10 +171,7 @@ class Sudoku_Grid_GUI:
         None.
 
         """
-        current_widget = event.widget
-        widget_row = current_widget.grid_info()["row"]
-        widget_column = current_widget.grid_info()["column"]
-
+        print(f'Button press event: {event}')
         for row_itr in range(9):
             for column_itr in range(9):
                 cell_colour = self.entry_grid[row_itr][column_itr]["background"]
@@ -193,13 +190,6 @@ class Sudoku_Grid_GUI:
                 if (self.entry_grid[row_itr][column_itr].get() == event.char):
                     self.entry_grid[row_itr][column_itr].config(
                         bg="gold", disabledbackground="gold")
-
-        print("Hello, key pressed = " + event.char +
-              " Cell pressed = " + str(event.x_root - self.window.winfo_rootx()) + " " + str(event.y_root - self.window.winfo_rootx()))
-        print(
-            f'Position? = {self.window.grid_location(event.x_root - self.window.winfo_rootx(),event.y_root - self.window.winfo_rootx())}')
-        print(
-            f'self.entry_grid[0][0]["grid"] = {self.entry_grid[0][0].grid_info()["row"]}, {self.entry_grid[0][0].grid_info()["column"]}')
 
     def callback(self, P):
         """
@@ -396,19 +386,39 @@ class Sudoku_Grid_GUI:
         # Set initial starting position
         row = 0
         collumn = 0
+        resets = 0
         grid_incomplete = True
+        start_of_row = False
         # Create a deep copy for use if code gets stuck for options at the end of a row
         grid_memory = np.copy(self.grid)
         # Iterate over each cell
 
         while grid_incomplete:
 
+            # If grid not fixed after 3 atempts then completely reset the grid
+            if resets == 3:
+                # Create empty sudoku grid
+                self.grid = np.zeros((11, 9, 9))
+
+                # Fill probility grids for each possible number
+                for number in range(2, 11):
+                    self.grid[number, :, :] = 1
+
+                # Set initial starting position
+                row = 0
+                collumn = 0
+                resets = 0
+                grid_incomplete = True
+                start_of_row = False
+
             # 1-d array of probabilities for each number in a cell
             probailities = self.get_cell_probabilites(row, collumn)
             print("Getting initial probs for cell")
 
             # Save configureation at the start of a new row
-            if collumn == 0:
+            if start_of_row:
+                start_of_row = False
+                resets = 0
                 grid_memory = np.copy(self.grid)
 
             # Check for NaNs, if found then reset current row
@@ -422,6 +432,7 @@ class Sudoku_Grid_GUI:
                 self.grid = np.copy(grid_memory)
                 # Update probability array
                 probailities = self.get_cell_probabilites(row, collumn)
+                resets += 1
                 print("Reset grid")
                 print(f'Issue row = {row}')
 
@@ -437,12 +448,14 @@ class Sudoku_Grid_GUI:
 
             # End code if in final cell
             if collumn == 9 and row == 8:
+                #print("------------- IN FINAL CELL ---------------")
                 grid_incomplete = False
 
             # Move to new row at end of current one
             if collumn == 9:
                 row += 1
                 collumn = 0
+                start_of_row = True
 
         print("SUCCESSFUL GRID : ")
         print(self.grid[0, :, :])
