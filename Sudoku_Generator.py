@@ -135,7 +135,7 @@ class Sudoku_Grid_GUI:
         """
         # Cerate new frame for 3x3 box
         frame = tk.Frame(self.window, relief="groove", bd=2,
-                         bg=colour).grid(row=row_start, column=column_start)  # , padx=5, pady=5)
+                         bg=colour).grid(row=row_start, column=column_start)
         print("Creating frames")
         for row_itr in range(3):
             for column_itr in range(3):
@@ -144,7 +144,7 @@ class Sudoku_Grid_GUI:
                 column_index = column_start + column_itr
 
                 entry = tk.Entry(frame, width=5, justify='center', font=(
-                    'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))  # .grid(row=row_index, column=column_index)
+                    'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))  
                 # Store entries
                 self.entry_grid[row_index][column_index] = entry
                 entry.bind("<Key>", self.highlight_cells)
@@ -155,6 +155,7 @@ class Sudoku_Grid_GUI:
                     entry.insert(0, int(self.grid[1, row_index, column_index]))
                     # Disable editing of initial values
                     entry.config(state='disabled', disabledbackground=colour)
+                    entry.bind("<Button-1>", self.highlight_cells_click)
         print("Created frames")
 
     def highlight_cells(self, event):
@@ -188,6 +189,40 @@ class Sudoku_Grid_GUI:
 
                 # Set any cells with the same number as key pressed to gold as well as current cell
                 if (self.entry_grid[row_itr][column_itr].get() == event.char):
+                    self.entry_grid[row_itr][column_itr].config(
+                        bg="gold", disabledbackground="gold")
+
+    def highlight_cells_click(self, event):
+        """
+        Function to override key press event and will highlight all cells with the same number as the key presssed.
+
+        Parameters
+        ----------
+        event : Tkinter event
+          Tkinter key press event
+
+        Returns
+        -------
+        None.
+
+        """
+        print(f'Button press event: {event.widget.get()}')
+        for row_itr in range(9):
+            for column_itr in range(9):
+                cell_colour = self.entry_grid[row_itr][column_itr]["background"]
+                # Reset all gold
+                if(cell_colour == "gold"):
+                    # Define position of box containing cell
+                    box_row = np.floor(row_itr / 3)
+                    box_column = np.floor(column_itr / 3)
+                    colour_index = int((box_row + box_column) % 2)
+
+                    # Reset cell to its original colour
+                    self.entry_grid[row_itr][column_itr].config(
+                        bg=self.colours[colour_index], disabledbackground=self.colours[colour_index])
+
+                # Set any cells with the same number as key pressed to gold as well as current cell
+                if (self.entry_grid[row_itr][column_itr].get() == event.widget.get()):
                     self.entry_grid[row_itr][column_itr].config(
                         bg="gold", disabledbackground="gold")
 
@@ -331,7 +366,7 @@ class Sudoku_Grid_GUI:
                 self.incomplete = False
             else:
                 messagebox.showinfo(
-                    "Fail", f'There is a mistake somewhere :(, Correct answers = {correct_answers}')
+                    "Fail", f'There is a mistake somewhere :(, Correct answers = {correct_answers})')
         # To catch when nothing is entered
         except Exception:
             messagebox.showerror("Error", "Please fill all cells with intergers 1-9")
