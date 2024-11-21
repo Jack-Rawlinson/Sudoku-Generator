@@ -12,7 +12,6 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 
-
 class Sudoku_Grid_GUI:
     """
     Creates the window for users to access the sudoku grid
@@ -32,6 +31,8 @@ class Sudoku_Grid_GUI:
         # Fill window with sudoku grid
         #print("Entering gui creation")
         self.gui_config()
+        # Highlight cells with number pressed 
+        self.window.bind("<Key>", self.highlight_cells)
         #print("Created gui config")
         # Create timer widegt after 1 microsecond
         self.window.after(1, self.create_timer)
@@ -83,7 +84,7 @@ class Sudoku_Grid_GUI:
 
         # Check answer button
         tk.Button(self.window, text="Check answer",
-                  command=self.check_answer).grid(row=10, column=0)  # , padx=5, pady=5)
+                  command=self.check_answer).grid(row=10, column=0)
         # Button to generate and show a new puzzle without closing application
         tk.Button(self.window, text="Generate new grid",
                   command=self.generate_new_grid).grid(row=10, column=1, columnspan=2)
@@ -147,8 +148,11 @@ class Sudoku_Grid_GUI:
                     'Arial', 18), bg=colour,  validate="all", validatecommand=(self.vcmd, "%P"))  
                 # Store entries
                 self.entry_grid[row_index][column_index] = entry
-                entry.bind("<Key>", self.highlight_cells)
                 entry.grid(row=row_index, column=column_index, padx=5, pady=5)
+                entry.bind("<Up>", self.navigation)
+                entry.bind("<Down>", self.navigation)
+                entry.bind("<Left>", self.navigation)
+                entry.bind("<Right>", self.navigation)
 
                 # Pre-fill the entry with the initial value from the board if not zero
                 if self.grid[1, row_index, column_index] != 0:
@@ -157,6 +161,37 @@ class Sudoku_Grid_GUI:
                     entry.config(state='disabled', disabledbackground=colour)
                     entry.bind("<Button-1>", self.highlight_cells_click)
         print("Created frames")
+
+    def navigation(self, event):
+        """
+        Function to navigate betwen cells using arrow keys, makes for better UX
+
+        Parameters
+        ----------
+        event : Tkinter event
+          Tkinter key press event
+
+        Returns
+        -------
+        None.
+        """
+        # Get row and column of current cell
+        pos = event.widget.grid_info()
+        row = pos["row"]
+        col = pos["column"]
+        # Update current cell in accordance to arrow key pressed
+        if(event.keysym == "Up"):
+            self.entry_grid[row-1][col].focus()
+        if(event.keysym == "Down"):
+            if(row==8):
+              row = -1
+            self.entry_grid[row+1][col].focus()
+        if(event.keysym == "Left"):
+            self.entry_grid[row][col-1].focus()
+        if(event.keysym == "Right"):
+            if(col==8):
+              col = -1
+            self.entry_grid[row][col+1].focus()
 
     def highlight_cells(self, event):
         """
@@ -173,24 +208,26 @@ class Sudoku_Grid_GUI:
 
         """
         print(f'Button press event: {event}')
-        for row_itr in range(9):
-            for column_itr in range(9):
-                cell_colour = self.entry_grid[row_itr][column_itr]["background"]
-                # Reset all gold
-                if(cell_colour == "gold"):
-                    # Define position of box containing cell
-                    box_row = np.floor(row_itr / 3)
-                    box_column = np.floor(column_itr / 3)
-                    colour_index = int((box_row + box_column) % 2)
+        # Don't highlight cells if directional keys are used
+        if(not(event.keysym in ("Up", "Down", "Left", "Right"))):
+          for row_itr in range(9):
+              for column_itr in range(9):
+                  cell_colour = self.entry_grid[row_itr][column_itr]["background"]
+                  # Reset all gold
+                  if(cell_colour == "gold"):
+                      # Define position of box containing cell
+                      box_row = np.floor(row_itr / 3)
+                      box_column = np.floor(column_itr / 3)
+                      colour_index = int((box_row + box_column) % 2)
 
-                    # Reset cell to its original colour
-                    self.entry_grid[row_itr][column_itr].config(
-                        bg=self.colours[colour_index], disabledbackground=self.colours[colour_index])
+                      # Reset cell to its original colour
+                      self.entry_grid[row_itr][column_itr].config(
+                          bg=self.colours[colour_index], disabledbackground=self.colours[colour_index])
 
-                # Set any cells with the same number as key pressed to gold as well as current cell
-                if (self.entry_grid[row_itr][column_itr].get() == event.char):
-                    self.entry_grid[row_itr][column_itr].config(
-                        bg="gold", disabledbackground="gold")
+                  # Set any cells with the same number as key pressed to gold as well as current cell
+                  if (self.entry_grid[row_itr][column_itr].get() == event.char):
+                      self.entry_grid[row_itr][column_itr].config(
+                          bg="gold", disabledbackground="gold")
 
     def highlight_cells_click(self, event):
         """
@@ -299,6 +336,9 @@ class Sudoku_Grid_GUI:
         print(f'HARD GRID : \n{self.hard_grid}')
         print("LEAVING SET DIFFICULTY")
         print(f'Diffculty = {self.difficulty}')
+        # print(f'Entry grid = {self.entry_grid}')
+        # print(f'Entry grid = {self.entry_grid[0]}')
+        # print(f'Entry grid = {self.entry_grid[0][0].get()}')
 
     def create_timer(self):
         """
